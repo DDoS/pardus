@@ -1,0 +1,62 @@
+# Compiled #
+############
+bin
+build
+dist
+lib
+out
+run
+target
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
+*.bin
+
+# Databases #
+#############
+*.db
+*.sql
+*.sqlite
+
+# Packages #
+############
+*.7z
+*.dmg
+*.gz
+*.iso
+*.rar
+*.tar
+*.zip
+
+# Repository #
+##############
+.git
+
+# Logging #
+###########
+/logs
+*.log
+
+# Misc #
+########
+*.bak
+
+# System #
+##########
+.DS_Store
+ehthumbs.db
+Thumbs.db
+
+# Project #
+###########
+.project
+.settings
+.dub
+nbproject
+build.xml
+*.iml
+*.ipr
+*.iws

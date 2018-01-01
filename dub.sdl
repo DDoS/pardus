@@ -1,0 +1,7 @@
+name "pardus"
+description "A p. compiler"
+authors "Aleksi Sapon"
+copyright "Copyright © 2018, Aleksi Sapon"
+license "MIT"
+dependency "openmethods" version="~>1.0.0"
+targetPath "bin"
