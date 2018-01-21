@@ -110,6 +110,10 @@ class _TupleType : CompositeType {
         this.fields = fields;
     }
 
+    @property size_t size() inout {
+        return fields.length;
+    }
+
     Type opIndex(size_t index) inout {
         return fields[index];
     }
@@ -135,7 +139,7 @@ class _StructType : TupleType {
 }
 
 private mixin template opDeref(alias returnSymbol) {
-    Type opUnary(string s : "*")() inout {
+    auto opUnary(string s : "*")() inout {
         return returnSymbol;
     }
 }
@@ -143,9 +147,9 @@ private mixin template opDeref(alias returnSymbol) {
 alias ArrayType = immutable _ArrayType;
 class _ArrayType : CompositeType {
     immutable Type component;
-    immutable long size;
+    immutable ulong size;
 
-    this(Modifiers modifiers, Type component, long size) immutable {
+    this(Modifiers modifiers, Type component, ulong size) immutable {
         super(modifiers);
         this.component = component;
         this.size = size;
@@ -214,4 +218,108 @@ class MutBackRefType : Type {
         this.name = name;
         this.backRef = backRef;
     }
+}
+
+alias LitType = immutable _LitType;
+abstract class _LitType : Type {
+}
+
+alias LitBoolType = immutable _LitBoolType;
+class _LitBoolType : LitType {
+    static LitBoolType TRUE = new LitBoolType(true);
+    static LitBoolType FALSE = new LitBoolType(true);
+
+    immutable bool value;
+
+    private this(bool value) immutable {
+        this.value = value;
+    }
+}
+
+alias LitUIntType = immutable _LitUIntType;
+class _LitUIntType : LitType {
+    immutable ulong value;
+
+    this(ulong value) immutable {
+        this.value = value;
+    }
+}
+
+alias LitSIntType = immutable _LitSIntType;
+class _LitSIntType : LitType {
+    immutable long value;
+
+    this(long value) immutable {
+        this.value = value;
+    }
+}
+
+alias LitFloatType = immutable _LitFloatType;
+class _LitFloatType : LitType {
+    immutable double value;
+
+    this(double value) immutable {
+        this.value = value;
+    }
+}
+
+alias LitTupleType = immutable _LitTupleType;
+class _LitTupleType : LitType {
+    immutable LitType[] fields;
+
+    this(LitType[] fields) immutable {
+        this.fields = fields;
+    }
+
+    @property size_t size() inout {
+        return fields.length;
+    }
+
+    LitType opIndex(size_t index) inout {
+        return fields[index];
+    }
+
+    size_t opDollar(size_t pos : 0)() inout {
+        return fields.length;
+    }
+}
+
+alias LitStructType = immutable _LitStructType;
+class _LitStructType : LitTupleType {
+    immutable string[] fieldNames;
+
+    this(LitType[] fields, immutable string[] fieldNames) immutable {
+        assert(fields.length == fieldNames.length);
+        super(fields);
+        this.fieldNames = fieldNames;
+    }
+
+    LitType opIndex(string name) inout {
+        return super.opIndex(fieldNames.countUntil(name));
+    }
+}
+
+alias LitPointerType = immutable _LitPointerType;
+class _LitPointerType : LitType {
+    immutable LitType value;
+
+    this(LitType value) immutable {
+        this.value = value;
+    }
+
+    mixin opDeref!value;
+}
+
+alias LitSizeSliceType = immutable _LitSizeSliceType;
+class _LitSizeSliceType : CompositeType {
+    immutable Type component;
+    immutable LitUIntType size;
+
+    this(Modifiers modifiers, Type component, LitUIntType size) immutable {
+        super(modifiers);
+        this.component = component;
+        this.size = size;
+    }
+
+    mixin opDeref!component;
 }

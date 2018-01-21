@@ -91,3 +91,43 @@ string _printRaw(FunctionType type) {
 string _printRaw(BackRefType type) {
     return type.name;
 }
+
+@method
+string _printRaw(LitBoolType type) {
+    return type.value ? "true" : "false";
+}
+
+@method
+string _printRaw(LitUIntType type) {
+    return "%du".format(type.value);
+}
+
+@method
+string _printRaw(LitSIntType type) {
+    return "%d".format(type.value);
+}
+
+@method
+string _printRaw(LitFloatType type) {
+    return "%g".format(type.value);
+}
+
+@method
+string _printRaw(LitTupleType type) {
+    return "{%s}".format(type.fields.join!(", ", print));
+}
+
+@method
+string _printRaw(LitStructType type) {
+    return "{%s}".format(stringZip!(" ", print, a => a)(type.fields, type.fieldNames).join!", "());
+}
+
+@method
+string _printRaw(LitPointerType type) {
+    return type.value.print() ~ "*";
+}
+
+@method
+string _printRaw(LitSizeSliceType type) {
+    return "%s[*%d]".format(type.component.print(), type.size.value);
+}
