@@ -3,6 +3,7 @@ import std.stdio : writeln;
 import openmethods : updateMethods;
 
 import pardus.type;
+import pardus.subtype;
 import pardus.print;
 
 void main() {
@@ -38,5 +39,30 @@ void main() {
     writeln(new LitTupleType([LitBoolType.FALSE, new LitSIntType(1337)]).print());
     writeln(new LitStructType([LitBoolType.FALSE, new LitSIntType(1337)], ["a", "b"]).print());
     writeln(new LitPointerType(new LitFloatType(1.542)).print());
-    writeln(new LitSizeSliceType(Modifiers.IMMUTABLE, IntType.SINT8, new LitUIntType(64)).print());
+    writeln(new LitSizeSliceType(Modifiers(Mutability.IMMUTABLE, true), IntType.SINT8, new LitUIntType(64)).print());
+
+    writeln();
+
+    writeln(LitBoolType.TRUE.subtype(BoolType.MUTABLE));
+    writeln(new LitSIntType(long.min).subtype(IntType.SINT64) == true);
+    writeln(new LitSIntType(long.max).subtype(IntType.SINT64) == true);
+    writeln(new LitUIntType(ulong.min).subtype(IntType.SINT64) == true);
+    writeln(new LitUIntType(ulong.max).subtype(IntType.SINT64) == false);
+    writeln(new LitSIntType(long.min).subtype(IntType.UINT64) == false);
+    writeln(new LitSIntType(long.max).subtype(IntType.UINT64) == true);
+    writeln(new LitUIntType(ulong.min).subtype(IntType.UINT64) == true);
+    writeln(new LitUIntType(ulong.max).subtype(IntType.UINT64) == true);
+
+    writeln(new LitSIntType(-120000).subtype(IntType.UINT16) == false);
+    writeln(new LitUIntType(120000).subtype(IntType.UINT16) == false);
+
+    writeln(new LitFloatType(-65504.0).subtype(FloatType.FP16) == true);
+    writeln(new LitFloatType(65504.0).subtype(FloatType.FP16) == true);
+    writeln(new LitFloatType(-float.max).subtype(FloatType.FP32) == true);
+    writeln(new LitFloatType(float.max).subtype(FloatType.FP32) == true);
+    writeln(new LitFloatType(-double.max).subtype(FloatType.FP64) == true);
+    writeln(new LitFloatType(double.max).subtype(FloatType.FP64) == true);
+
+    writeln(new LitSIntType(-120000).subtype(FloatType.FP16) == false);
+    writeln(new LitUIntType(120000).subtype(FloatType.FP16) == false);
 }

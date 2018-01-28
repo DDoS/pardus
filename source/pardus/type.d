@@ -134,8 +134,16 @@ class _StructType : TupleType {
         this.fieldNames = fieldNames;
     }
 
+    override Type opIndex(size_t index) inout {
+        return super[index];
+    }
+
+    bool opBinaryRight(string op : "in")(string name) inout {
+        return fieldNames.countUntil(name) >= 0;
+    }
+
     Type opIndex(string name) inout {
-        return super.opIndex(fieldNames.countUntil(name));
+        return super[fieldNames.countUntil(name)];
     }
 }
 
@@ -201,8 +209,12 @@ class _FunctionType : DefinedType {
         return params[index];
     }
 
+    bool opBinaryRight(string op : "in")(string name) inout {
+        return fieldNames.countUntil(name) >= 0;
+    }
+
     Type opIndex(string name) inout {
-        return opIndex(paramNames.countUntil(name));
+        return this[paramNames.countUntil(name)];
     }
 
     size_t opDollar(size_t pos : 0)() inout {
@@ -294,9 +306,17 @@ class _LitStructType : LitTupleType {
         super(fields);
         this.fieldNames = fieldNames;
     }
+    
+    override LitType opIndex(size_t index) inout {
+        return super[index];
+    }
+
+    bool opBinaryRight(string op : "in")(string name) inout {
+        return fieldNames.countUntil(name) >= 0;
+    }
 
     LitType opIndex(string name) inout {
-        return super.opIndex(fieldNames.countUntil(name));
+        return super[fieldNames.countUntil(name)];
     }
 }
 
