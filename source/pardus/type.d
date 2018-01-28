@@ -17,9 +17,10 @@ abstract class _Type {
 }
 
 struct Modifiers {
-    static immutable Modifiers MUTABLE = Modifiers(Mutability.MUTABLE);
-    static immutable Modifiers IMMUTABLE = Modifiers(Mutability.IMMUTABLE);
+    static immutable Modifiers MUTABLE = Modifiers(Mutability.MUTABLE, false);
+    static immutable Modifiers IMMUTABLE = Modifiers(Mutability.IMMUTABLE, false);
     Mutability mutability;
+    bool identified;
 }
 
 alias DefinedType = immutable _DefinedType;

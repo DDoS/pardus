@@ -19,22 +19,23 @@ string _print(Type type) {
 @method
 string _print(DefinedType type) {
     auto raw = type.printRaw();
-    string modifier = void;
+    string identified = type.modifiers.identified ? "@" : "";
+    string mutability = void;
     final switch (type.modifiers.mutability) with (Mutability) {
         case MUTABLE: {
-            modifier = "";
+            mutability = "";
         }
         break;
         case IMMUTABLE: {
-            modifier = "!";
+            mutability = "!";
         }
         break;
         case UNKNOWN: {
-            modifier = "?";
+            mutability = "?";
         }
         break;
     }
-    return raw ~ modifier;
+    return raw ~ identified ~ mutability;
 }
 
 string printRaw(virtual!Type type);
