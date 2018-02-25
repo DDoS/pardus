@@ -49,6 +49,7 @@ abstract class _CompositeType : DefinedType {
 alias BoolType = immutable _BoolType;
 class _BoolType : AtomicType {
     static BoolType MUTABLE = new BoolType(Modifiers.MUTABLE);
+    static BoolType IMMUTABLE = new BoolType(Modifiers.IMMUTABLE);
 
     private this(Modifiers modifiers) immutable {
         super(modifiers);
@@ -205,6 +206,10 @@ class _FunctionType : DefinedType {
         this.ret = ret;
     }
 
+    @property size_t size() inout {
+        return params.length;
+    }
+
     Type opIndex(size_t index) inout {
         return params[index];
     }
@@ -306,7 +311,7 @@ class _LitStructType : LitTupleType {
         super(fields);
         this.fieldNames = fieldNames;
     }
-    
+
     override LitType opIndex(size_t index) inout {
         return super[index];
     }

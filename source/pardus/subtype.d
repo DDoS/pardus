@@ -3,6 +3,7 @@ module pardus.subtype;
 import openmethods: registerMethods, virtual, method;
 
 import pardus.type;
+import pardus.identical;
 
 mixin(registerMethods);
 
@@ -10,7 +11,7 @@ bool subtype(virtual!Type right, virtual!Type left);
 
 @method
 bool _subtype(Type left, Type right) {
-    return false;
+    return left.identical(right);
 }
 
 @method
@@ -107,4 +108,27 @@ bool _subtype(LitStructType left, StructType right) {
 @method
 bool _subtype(LitStructType left, ArrayType right) {
     return false;
+}
+
+@method
+bool _subtype(LitPointerType left, PointerType right) {
+    return (*left).subtype(*right);
+}
+
+@method
+bool _subtype(LitPointerType left, SliceType right) {
+    if (auto tupleLeft = cast(LitTupleType) *left) {
+        foreach (i; 0 .. tupleLeft.size()) {
+            if (!tupleLeft[i].subtype(*right)) {
+                return false;
+            }
+        }
+        return true;
+    }
+    return false;
+}
+
+@method
+bool _subtype(LitSizeSliceType left, SliceType right) {
+    return (*left).identical(*right);
 }

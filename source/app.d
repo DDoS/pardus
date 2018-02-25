@@ -3,6 +3,7 @@ import std.stdio : writeln;
 import openmethods : updateMethods;
 
 import pardus.type;
+import pardus.identical;
 import pardus.subtype;
 import pardus.print;
 
@@ -26,11 +27,47 @@ void main() {
 
     auto backRef = new MutBackRefType("T", null);
     auto selfRefType = new StructType(Modifiers(Mutability.UNKNOWN),
-            [IntType.SINT32, new PointerType(Modifiers.MUTABLE, cast(immutable) backRef)], ["value", "next"]);
+        [IntType.SINT32, new PointerType(Modifiers.MUTABLE, cast(immutable) backRef)], ["value", "next"]);
     backRef.backRef = selfRefType;
     writeln(selfRefType.print());
     auto backRefImmu = cast(BackRefType) *cast(PointerType) selfRefType["next"];
     writeln((cast(StructType) backRefImmu.backRef)["value"].print());
+
+    auto backRef2 = new MutBackRefType("S", null);
+    auto selfRefType2 = new StructType(Modifiers(Mutability.UNKNOWN),
+        [IntType.SINT32, new PointerType(Modifiers.MUTABLE, cast(immutable) backRef2)], ["value", "next"]);
+    backRef2.backRef = selfRefType2;
+    writeln(selfRefType2.print());
+
+    auto backRef3 = new MutBackRefType("U", null);
+    auto selfRefType3 = new StructType(Modifiers(Mutability.UNKNOWN),
+            [IntType.SINT32, new PointerType(Modifiers.MUTABLE, new StructType(Modifiers(Mutability.UNKNOWN),
+                [IntType.SINT32, new PointerType(Modifiers.MUTABLE, cast(immutable) backRef3)], ["value", "next"]))],
+            ["value", "next"]);
+    backRef3.backRef = selfRefType3;
+    writeln(selfRefType3.print());
+
+    auto mutualRefA = new MutBackRefType("A", null);
+    auto mutualRefB = new MutBackRefType("B", null);
+    auto mutualA = new StructType(Modifiers.MUTABLE,
+        [new PointerType(Modifiers.MUTABLE, cast(immutable) mutualRefB)], ["b"]);
+    auto mutualB = new StructType(Modifiers.MUTABLE,
+        [new PointerType(Modifiers.MUTABLE, cast(immutable) mutualRefA)], ["a"]);
+    mutualRefA.backRef = mutualA;
+    mutualRefB.backRef = mutualB;
+    writeln(mutualA.print());
+    writeln(mutualB.print());
+
+    auto mutualRefC = new MutBackRefType("C", null);
+    auto mutualRefD = new MutBackRefType("B", null);
+    auto mutualC = new StructType(Modifiers.MUTABLE,
+        [new PointerType(Modifiers.MUTABLE, cast(immutable) mutualRefD)], ["b"]);
+    auto mutualD = new StructType(Modifiers.MUTABLE,
+        [new PointerType(Modifiers.MUTABLE, cast(immutable) mutualRefC)], ["a"]);
+    mutualRefC.backRef = mutualC;
+    mutualRefD.backRef = mutualD;
+    writeln(mutualC.print());
+    writeln(mutualD.print());
 
     writeln(LitBoolType.TRUE.print());
     writeln(new LitUIntType(12).print());
@@ -65,4 +102,18 @@ void main() {
 
     writeln(new LitSIntType(-120000).subtype(FloatType.FP16) == false);
     writeln(new LitUIntType(120000).subtype(FloatType.FP16) == false);
+
+    writeln(selfRefType.identical(selfRefType2));
+    writeln(selfRefType.identical(selfRefType3));
+    writeln(selfRefType2.identical(selfRefType3));
+    writeln(selfRefType2.identical(selfRefType3));
+
+    writeln(!mutualA.identical(mutualB));
+    writeln(!mutualD.identical(mutualC));
+
+    writeln(mutualA.identical(mutualC));
+    writeln(mutualD.identical(mutualB));
+
+    writeln(!mutualB.identical(mutualC));
+    writeln(!mutualA.identical(mutualD));
 }
