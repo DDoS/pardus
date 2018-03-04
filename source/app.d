@@ -80,6 +80,22 @@ void main() {
 
     writeln();
 
+    writeln(selfRefType.identical(selfRefType2));
+    writeln(selfRefType.identical(selfRefType3));
+    writeln(selfRefType2.identical(selfRefType3));
+    writeln(selfRefType2.identical(selfRefType3));
+
+    writeln(!mutualA.identical(mutualB));
+    writeln(!mutualD.identical(mutualC));
+
+    writeln(mutualA.identical(mutualC));
+    writeln(mutualD.identical(mutualB));
+
+    writeln(!mutualB.identical(mutualC));
+    writeln(!mutualA.identical(mutualD));
+
+    writeln();
+
     writeln(LitBoolType.TRUE.subtype(BoolType.MUTABLE));
     writeln(new LitSIntType(long.min).subtype(IntType.SINT64) == true);
     writeln(new LitSIntType(long.max).subtype(IntType.SINT64) == true);
@@ -103,17 +119,13 @@ void main() {
     writeln(new LitSIntType(-120000).subtype(FloatType.FP16) == false);
     writeln(new LitUIntType(120000).subtype(FloatType.FP16) == false);
 
-    writeln(selfRefType.identical(selfRefType2));
-    writeln(selfRefType.identical(selfRefType3));
-    writeln(selfRefType2.identical(selfRefType3));
-    writeln(selfRefType2.identical(selfRefType3));
+    writeln(IntType.SINT8.subtype(IntType.SINT8) == true);
+    writeln(IntType.SINT8.subtype(IntType.UINT8) == false);
+    writeln(IntType.SINT8.subtype(IntType.UINT64) == false);
+    writeln(IntType.UINT8.subtype(IntType.SINT16) == true);
+    writeln(IntType.SINT32.subtype(IntType.SINT64) == true);
 
-    writeln(!mutualA.identical(mutualB));
-    writeln(!mutualD.identical(mutualC));
-
-    writeln(mutualA.identical(mutualC));
-    writeln(mutualD.identical(mutualB));
-
-    writeln(!mutualB.identical(mutualC));
-    writeln(!mutualA.identical(mutualD));
+    writeln(FloatType.FP16.subtype(FloatType.FP16) == true);
+    writeln(FloatType.FP32.subtype(FloatType.FP16) == false);
+    writeln(FloatType.FP32.subtype(FloatType.FP64) == true);
 }

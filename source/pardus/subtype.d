@@ -15,16 +15,48 @@ bool _subtype(Type left, Type right) {
 }
 
 @method
+bool _subtype(IntType left, IntType right) {
+    if (left.signed == right.signed) {
+        return left.bits <= right.bits;
+    }
+    if (!left.signed && right.signed) {
+        return left.bits < right.bits;
+    }
+    return false;
+}
+
+@method
+bool _subtype(FloatType left, FloatType right) {
+    return left.bits <= right.bits;
+}
+
+@method
+bool _subtype(IntType left, FloatType right) {
+    final switch (right.bits) {
+        case 16:
+            return left.bits <= 16;
+        case 32:
+        case 64:
+            return true;
+    }
+}
+
+@method
+bool _subtype(ArrayType left, TupleType right) {
+    return right.subtype(left);
+}
+
+@method
 bool _subtype(LitBoolType left, BoolType right) {
     return true;
 }
 
 private long minValue(IntType type) {
-    return type.signed ? -1L << (type.bytes * 8 - 1) : 0;
+    return type.signed ? -1L << (type.bits - 1) : 0;
 }
 
 private ulong maxValue(IntType type) {
-    auto usableBits = type.bytes * 8 - (type.signed ? 1 : 0);
+    auto usableBits = type.bits - (type.signed ? 1 : 0);
     return -1UL >>> (64 - usableBits);
 }
 
