@@ -42,6 +42,19 @@ bool _subtype(IntType left, FloatType right) {
 }
 
 @method
+bool _subtype(TupleType left, ArrayType right) {
+    if (left.size() != right.size) {
+        return false;
+    }
+    foreach (field; left.fields) {
+        if (!field.identical(*right)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+@method
 bool _subtype(ArrayType left, TupleType right) {
     return right.subtype(left);
 }

@@ -89,7 +89,7 @@ string _printRaw(FunctionType type) {
 }
 
 @method
-string _printRaw(BackRefType type) {
+string _printRaw(LinkType type) {
     return type.name;
 }
 

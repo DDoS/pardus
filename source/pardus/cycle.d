@@ -1,14 +1,13 @@
 module pardus.cycle;
 
-class BiCycles(T) {
+class Cycles(T, size_t N) if (N > 0) {
     struct Node {
-        T a;
-        T b;
+        T[N] n;
     }
     bool[Node] path;
 
-    bool traverse(T a, T b) {
-        auto node = Node(a, b);
+    bool traverse(T[N] n...) {
+        auto node = Node(n);
         if (node in path) {
             return true;
         }

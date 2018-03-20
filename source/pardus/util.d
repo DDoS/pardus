@@ -24,3 +24,11 @@ string join(string joiner, Range)(Range things)
     }
     return things.reduce!((a, b) => a ~ joiner ~ b);
 }
+
+T tryCast(T, S)(S s) {
+    T t = cast(T) s;
+    if (t) {
+        return t;
+    }
+    throw new Exception("Cannot cast " ~ __traits(identifier, S) ~ " to " ~ __traits(identifier, T));
+}

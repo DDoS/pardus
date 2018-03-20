@@ -3,9 +3,11 @@ import std.stdio : writeln;
 import openmethods : updateMethods;
 
 import pardus.type;
+import pardus.mutable;
 import pardus.identical;
 import pardus.subtype;
 import pardus.print;
+import pardus.util;
 
 void main() {
     updateMethods();
@@ -25,47 +27,47 @@ void main() {
     writeln(funcType.print());
     writeln(funcType["x"].print());
 
-    auto backRef = new MutBackRefType("T", null);
+    auto link = new MutLinkType("T", null);
     auto selfRefType = new StructType(Modifiers(Mutability.UNKNOWN),
-        [IntType.SINT32, new PointerType(Modifiers.MUTABLE, cast(immutable) backRef)], ["value", "next"]);
-    backRef.backRef = selfRefType;
+        [IntType.SINT32, new PointerType(Modifiers.MUTABLE, cast(immutable) link)], ["value", "next"]);
+    link.link = selfRefType;
     writeln(selfRefType.print());
-    auto backRefImmu = cast(BackRefType) *cast(PointerType) selfRefType["next"];
-    writeln((cast(StructType) backRefImmu.backRef)["value"].print());
+    auto linkImmu = cast(LinkType) *cast(PointerType) selfRefType["next"];
+    writeln((cast(StructType) linkImmu.link)["value"].print());
 
-    auto backRef2 = new MutBackRefType("S", null);
+    auto link2 = new MutLinkType("S", null);
     auto selfRefType2 = new StructType(Modifiers(Mutability.UNKNOWN),
-        [IntType.SINT32, new PointerType(Modifiers.MUTABLE, cast(immutable) backRef2)], ["value", "next"]);
-    backRef2.backRef = selfRefType2;
+        [IntType.SINT32, new PointerType(Modifiers.MUTABLE, cast(immutable) link2)], ["value", "next"]);
+    link2.link = selfRefType2;
     writeln(selfRefType2.print());
 
-    auto backRef3 = new MutBackRefType("U", null);
+    auto link3 = new MutLinkType("U", null);
     auto selfRefType3 = new StructType(Modifiers(Mutability.UNKNOWN),
             [IntType.SINT32, new PointerType(Modifiers.MUTABLE, new StructType(Modifiers(Mutability.UNKNOWN),
-                [IntType.SINT32, new PointerType(Modifiers.MUTABLE, cast(immutable) backRef3)], ["value", "next"]))],
+                [IntType.SINT32, new PointerType(Modifiers.MUTABLE, cast(immutable) link3)], ["value", "next"]))],
             ["value", "next"]);
-    backRef3.backRef = selfRefType3;
+    link3.link = selfRefType3;
     writeln(selfRefType3.print());
 
-    auto mutualRefA = new MutBackRefType("A", null);
-    auto mutualRefB = new MutBackRefType("B", null);
+    auto mutualRefA = new MutLinkType("A", null);
+    auto mutualRefB = new MutLinkType("B", null);
     auto mutualA = new StructType(Modifiers.MUTABLE,
         [new PointerType(Modifiers.MUTABLE, cast(immutable) mutualRefB)], ["b"]);
     auto mutualB = new StructType(Modifiers.MUTABLE,
         [new PointerType(Modifiers.MUTABLE, cast(immutable) mutualRefA)], ["a"]);
-    mutualRefA.backRef = mutualA;
-    mutualRefB.backRef = mutualB;
+    mutualRefA.link = mutualA;
+    mutualRefB.link = mutualB;
     writeln(mutualA.print());
     writeln(mutualB.print());
 
-    auto mutualRefC = new MutBackRefType("C", null);
-    auto mutualRefD = new MutBackRefType("B", null);
+    auto mutualRefC = new MutLinkType("C", null);
+    auto mutualRefD = new MutLinkType("B", null);
     auto mutualC = new StructType(Modifiers.MUTABLE,
         [new PointerType(Modifiers.MUTABLE, cast(immutable) mutualRefD)], ["b"]);
     auto mutualD = new StructType(Modifiers.MUTABLE,
         [new PointerType(Modifiers.MUTABLE, cast(immutable) mutualRefC)], ["a"]);
-    mutualRefC.backRef = mutualC;
-    mutualRefD.backRef = mutualD;
+    mutualRefC.link = mutualC;
+    mutualRefD.link = mutualD;
     writeln(mutualC.print());
     writeln(mutualD.print());
 
@@ -93,6 +95,34 @@ void main() {
 
     writeln(!mutualB.identical(mutualC));
     writeln(!mutualA.identical(mutualD));
+
+    writeln();
+
+    writeln(BoolType.IMMUTABLE.makeValueMutable().print());
+    writeln(new TupleType(Modifiers.IMMUTABLE, [BoolType.MUTABLE, IntType.UINT16, FloatType.FP64]).makeValueMutable().print());
+    writeln(new StructType(Modifiers.IMMUTABLE, [BoolType.IMMUTABLE], ["a"]).makeValueMutable().print());
+    writeln(new ArrayType(Modifiers.IMMUTABLE, BoolType.IMMUTABLE, 16).makeValueMutable().print());
+    writeln(new SliceType(Modifiers.IMMUTABLE, BoolType.IMMUTABLE).makeValueMutable().print());
+    writeln(new PointerType(Modifiers.IMMUTABLE, BoolType.IMMUTABLE).makeValueMutable().print());
+    writeln(new FunctionType(Modifiers.IMMUTABLE, [BoolType.IMMUTABLE], [""], null).makeValueMutable().print());
+
+    auto link4 = new MutLinkType("T", null);
+    auto selfRefImmType = new StructType(Modifiers.IMMUTABLE,
+        [BoolType.IMMUTABLE, new PointerType(Modifiers.IMMUTABLE, cast(immutable) link4)], ["value", "next"]);
+    link4.link = selfRefImmType;
+    writeln(selfRefImmType.makeValueMutable().print());
+    writeln(selfRefImmType.makeValueMutable().tryCast!StructType()["next"].tryCast!PointerType().value.tryCast!LinkType().link.print());
+
+    auto link5 = new MutLinkType("T", null);
+    auto impossibleType = new StructType(Modifiers.IMMUTABLE, [cast(immutable) link5], ["t"]);
+    link5.link = impossibleType;
+    writeln(impossibleType.makeValueMutable().print());
+    writeln(impossibleType.makeValueMutable().tryCast!StructType()["t"].tryCast!LinkType().link.print());
+
+    auto link6 = new MutLinkType("D", new ArrayType(Modifiers.IMMUTABLE, BoolType.IMMUTABLE, 16));
+    auto dumbType = new StructType(Modifiers.IMMUTABLE, [cast(immutable) link6], ["d"]);
+    writeln(dumbType.makeValueMutable().print());
+    writeln(dumbType.makeValueMutable().tryCast!StructType()["d"].tryCast!LinkType().link.print());
 
     writeln();
 

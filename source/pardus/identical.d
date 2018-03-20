@@ -1,13 +1,13 @@
 module pardus.identical;
 
-import openmethods: registerMethods, virtual, method, next;
+import openmethods: registerMethods, virtual, method;
 
 import pardus.type;
 import pardus.cycle;
 
 mixin(registerMethods);
 
-alias TypesCycles = BiCycles!Type;
+private alias TypesCycles = Cycles!(LinkType, 2);
 
 bool identical(Type left, Type right) {
     return left is right || left.identical(right, new TypesCycles());
@@ -90,21 +90,21 @@ bool _identical(FunctionType left, FunctionType right, TypesCycles cycles) {
 }
 
 @method
-bool _identical(BackRefType left, BackRefType right, TypesCycles cycles) {
+bool _identical(LinkType left, LinkType right, TypesCycles cycles) {
     if (cycles.traverse(left, right)) {
         return true;
     }
-    return left.backRef.identical(right.backRef, cycles);
+    return left.link.identical(right.link, cycles);
 }
 
 @method
-bool _identical(BackRefType left, Type right, TypesCycles cycles) {
-    return left.backRef.identical(right, cycles);
+bool _identical(LinkType left, Type right, TypesCycles cycles) {
+    return left.link.identical(right, cycles);
 }
 
 @method
-bool _identical(Type left, BackRefType right, TypesCycles cycles) {
-    return left.identical(right.backRef, cycles);
+bool _identical(Type left, LinkType right, TypesCycles cycles) {
+    return left.identical(right.link, cycles);
 }
 
 @method

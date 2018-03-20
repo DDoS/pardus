@@ -2,7 +2,7 @@ module pardus.type;
 
 import std.algorithm.searching : countUntil;
 import std.format : format;
-import std.typecons : Rebindable, Nullable;
+import std.typecons : Rebindable;
 
 import pardus.util;
 
@@ -19,6 +19,7 @@ abstract class _Type {
 struct Modifiers {
     static immutable Modifiers MUTABLE = Modifiers(Mutability.MUTABLE, false);
     static immutable Modifiers IMMUTABLE = Modifiers(Mutability.IMMUTABLE, false);
+    static immutable Modifiers UNKNOWN = Modifiers(Mutability.UNKNOWN, false);
     Mutability mutability;
     bool identified;
 }
@@ -50,6 +51,7 @@ alias BoolType = immutable _BoolType;
 class _BoolType : AtomicType {
     static BoolType MUTABLE = new BoolType(Modifiers.MUTABLE);
     static BoolType IMMUTABLE = new BoolType(Modifiers.IMMUTABLE);
+    static BoolType UNKNOWN = new BoolType(Modifiers.UNKNOWN);
 
     private this(Modifiers modifiers) immutable {
         super(modifiers);
@@ -71,7 +73,7 @@ class _IntType : AtomicType {
     immutable bool signed;
     immutable string name;
 
-    private this(Modifiers modifiers, size_t bytes, bool signed) immutable {
+    this(Modifiers modifiers, size_t bytes, bool signed) immutable {
         super(modifiers);
         this.bytes = bytes;
         this.signed = signed;
@@ -92,7 +94,7 @@ class _FloatType : AtomicType {
     immutable size_t bytes;
     immutable string name;
 
-    private this(Modifiers modifiers, size_t bytes) immutable {
+    this(Modifiers modifiers, size_t bytes) immutable {
         super(modifiers);
         this.bytes = bytes;
         name = "fp%d".format(bits);
@@ -227,14 +229,14 @@ class _FunctionType : DefinedType {
     }
 }
 
-alias BackRefType = immutable MutBackRefType;
-class MutBackRefType : Type {
+alias LinkType = immutable MutLinkType;
+class MutLinkType : Type {
     immutable string name;
-    Rebindable!Type backRef;
+    Rebindable!CompositeType link;
 
-    this(string name, Type backRef) {
+    this(string name, CompositeType link) {
         this.name = name;
-        this.backRef = backRef;
+        this.link = link;
     }
 }
 
