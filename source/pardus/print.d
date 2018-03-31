@@ -5,23 +5,23 @@ import std.format : format;
 import openmethods: registerMethods, virtual, method;
 
 import pardus.type;
+import pardus.cycle;
 import pardus.util;
 
 mixin(registerMethods);
 
-string print(virtual!Type type);
+private alias TypeCycles = Cycles!(CompositeType, 1);
 
-@method
-string _print(Type type) {
-    return type.printRaw();
+string print(Type type) {
+    return type.print(new TypeCycles());
 }
 
-@method
-string _print(DefinedType type) {
-    auto raw = type.printRaw();
-    string identified = type.modifiers.identified ? "@" : "";
+string print(virtual!Type type, TypeCycles cycles);
+
+private string printSuffix(Modifiers modifiers) {
+    string identified = modifiers.identified ? "^" : "";
     string mutability = void;
-    final switch (type.modifiers.mutability) with (Mutability) {
+    final switch (modifiers.mutability) with (Mutability) {
         case MUTABLE: {
             mutability = "";
         }
@@ -35,100 +35,120 @@ string _print(DefinedType type) {
         }
         break;
     }
-    return raw ~ identified ~ mutability;
-}
-
-string printRaw(virtual!Type type);
-
-@method
-string _printRaw(BoolType type) {
-    return "bool";
+    return identified ~ mutability;
 }
 
 @method
-string _printRaw(IntType type) {
-    return type.name;
+string _print(BoolType type, TypeCycles cycles) {
+    return "bool" ~ type.modifiers.printSuffix();
 }
 
 @method
-string _printRaw(FloatType type) {
-    return type.name;
+string _print(IntType type, TypeCycles cycles) {
+    return type.name ~ type.modifiers.printSuffix();
 }
 
 @method
-string _printRaw(TupleType type) {
-    return "{%s}".format(type.fields.join!(", ", print));
+string _print(FloatType type, TypeCycles cycles) {
+    return type.name ~ type.modifiers.printSuffix();
+}
+
+private string print(Type[] fields, immutable string[] fieldNames, TypeCycles cycles) {
+    assert(fieldNames.length == 0 || fields.length == fieldNames.length);
+    string s = "";
+    foreach (i, type; fields) {
+        s ~= type.print(cycles);
+        if (fieldNames.length > 0 && fieldNames[i].length > 0) {
+            s ~= " " ~ fieldNames[i];
+        }
+        if (i < fields.length - 1) {
+            s ~= ", ";
+        }
+    }
+    return s;
 }
 
 @method
-string _printRaw(StructType type) {
-    return "{%s}".format(stringZip!(" ", print, a => a)(type.fields, type.fieldNames).join!", "());
+string _print(TupleType type, TypeCycles cycles) {
+    cycles.traverse(type);
+    return "{%s}%s".format(print(type.fields, [], cycles), type.modifiers.printSuffix());
 }
 
 @method
-string _printRaw(ArrayType type) {
-    return type.component.print() ~ "[%d]".format(type.size);
+string _print(StructType type, TypeCycles cycles) {
+    cycles.traverse(type);
+    return "{%s}%s".format(print(type.fields, type.fieldNames, cycles), type.modifiers.printSuffix());
 }
 
 @method
-string _printRaw(SliceType type) {
-    return type.component.print() ~ "[*]";
+string _print(ArrayType type, TypeCycles cycles) {
+    cycles.traverse(type);
+    return "%s[%d]%s".format(type.component.print(cycles), type.size, type.modifiers.printSuffix());
 }
 
 @method
-string _printRaw(PointerType type) {
-    return type.value.print() ~ "*";
+string _print(SliceType type, TypeCycles cycles) {
+    cycles.traverse(type);
+    return "%s[*]%s".format(type.component.print(cycles), type.modifiers.printSuffix());
 }
 
 @method
-string _printRaw(FunctionType type) {
-    return "func (%s)%s".format(
-        stringZip!("", print, a => a.length == 0 ? "" : ' ' ~ a)(type.params, type.paramNames).join!", "(),
-        type.ret is null ? "" : ' ' ~ type.ret.print()
-    );
+string _print(PointerType type, TypeCycles cycles) {
+    cycles.traverse(type);
+    return "%s*%s".format(type.value.print(cycles), type.modifiers.printSuffix());
 }
 
 @method
-string _printRaw(LinkType type) {
-    return type.name;
+string _print(FunctionType type, TypeCycles cycles) {
+    auto ret = type.ret is null ? "" : ' ' ~ type.ret.print(cycles);
+    return "func%s (%s)%s".format(type.modifiers.printSuffix(), print(type.params, type.paramNames, cycles), ret);
 }
 
 @method
-string _printRaw(LitBoolType type) {
+string _print(LinkType type, TypeCycles cycles) {
+    if (cycles.traverse(type.link)) {
+        return type.name;
+    }
+    return type.link.print(cycles);
+}
+
+@method
+string _print(LitBoolType type, TypeCycles cycles) {
     return type.value ? "true" : "false";
 }
 
 @method
-string _printRaw(LitUIntType type) {
+string _print(LitUIntType type, TypeCycles cycles) {
     return "%du".format(type.value);
 }
 
 @method
-string _printRaw(LitSIntType type) {
+string _print(LitSIntType type, TypeCycles cycles) {
     return "%d".format(type.value);
 }
 
 @method
-string _printRaw(LitFloatType type) {
+string _print(LitFloatType type, TypeCycles cycles) {
     return "%g".format(type.value);
 }
 
 @method
-string _printRaw(LitTupleType type) {
+string _print(LitTupleType type, TypeCycles cycles) {
     return "{%s}".format(type.fields.join!(", ", print));
 }
 
 @method
-string _printRaw(LitStructType type) {
-    return "{%s}".format(stringZip!(" ", print, a => a)(type.fields, type.fieldNames).join!", "());
+string _print(LitStructType type, TypeCycles cycles) {
+    return "{%s}".format(print(type.fields, type.fieldNames, cycles));
 }
 
 @method
-string _printRaw(LitPointerType type) {
-    return type.value.print() ~ "*";
+string _print(LitPointerType type, TypeCycles cycles) {
+    return "%s*".format(type.value.print(cycles));
 }
 
 @method
-string _printRaw(LitSizeSliceType type) {
-    return "%s[*%d]".format(type.component.print(), type.size.value);
+string _print(LitSizeSliceType type, TypeCycles cycles) {
+    cycles.traverse(type);
+    return "%s[*%d]%s".format(type.component.print(cycles), type.size.value, type.modifiers.printSuffix());
 }

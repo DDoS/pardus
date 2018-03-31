@@ -23,7 +23,7 @@ void main() {
     writeln(new SliceType(Modifiers.MUTABLE, FloatType.FP32).print());
     writeln(new PointerType(Modifiers.MUTABLE, tupleType).print());
     writeln(new FunctionType(Modifiers.MUTABLE, [IntType.UINT32, IntType.SINT32], ["", ""], null).print());
-    auto funcType = new FunctionType(Modifiers.MUTABLE, [IntType.UINT32, IntType.SINT32], ["x", "y"], BoolType.MUTABLE);
+    auto funcType = new FunctionType(Modifiers(Mutability.IMMUTABLE, true), [IntType.UINT32, IntType.SINT32], ["x", "y"], BoolType.MUTABLE);
     writeln(funcType.print());
     writeln(funcType["x"].print());
 

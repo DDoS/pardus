@@ -26,7 +26,7 @@ private class BrokenLinks {
 }
 
 Type makeValueMutable(Type type) {
-    return makeValueMutable(type, new TypeCycles(), new BrokenLinks());
+    return type.makeValueMutable(new TypeCycles(), new BrokenLinks());
 }
 
 Type makeValueMutable(virtual!Type type, TypeCycles cycles, BrokenLinks broken);
@@ -124,4 +124,14 @@ LinkType _makeValueMutable(LinkType type, TypeCycles cycles, BrokenLinks broken)
     }
     auto mutable = type.link.makeValueMutable(cycles, broken).tryCast!CompositeType();
     return cast(immutable) new MutLinkType(type.name, mutable);
+}
+
+@method
+LitSizeSliceType _makeValueMutable(LitSizeSliceType type, TypeCycles cycles, BrokenLinks broken) {
+    cycles.traverse(type);
+    auto mutable = new LitSizeSliceType(Modifiers.MUTABLE, type.component, type.size);
+    if (auto brokenLink = type in broken) {
+        brokenLink.link = mutable;
+    }
+    return mutable;
 }
