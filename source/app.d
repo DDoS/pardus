@@ -5,7 +5,7 @@ import openmethods : updateMethods;
 import pardus.type;
 import pardus.mutable;
 import pardus.identical;
-import pardus.subtype;
+import pardus.copiable;
 import pardus.print;
 import pardus.util;
 
@@ -126,36 +126,36 @@ void main() {
 
     writeln();
 
-    writeln(LitBoolType.TRUE.subtype(BoolType.MUTABLE));
-    writeln(new LitSIntType(long.min).subtype(IntType.SINT64) == true);
-    writeln(new LitSIntType(long.max).subtype(IntType.SINT64) == true);
-    writeln(new LitUIntType(ulong.min).subtype(IntType.SINT64) == true);
-    writeln(new LitUIntType(ulong.max).subtype(IntType.SINT64) == false);
-    writeln(new LitSIntType(long.min).subtype(IntType.UINT64) == false);
-    writeln(new LitSIntType(long.max).subtype(IntType.UINT64) == true);
-    writeln(new LitUIntType(ulong.min).subtype(IntType.UINT64) == true);
-    writeln(new LitUIntType(ulong.max).subtype(IntType.UINT64) == true);
+    writeln(LitBoolType.TRUE.copiableAs(BoolType.MUTABLE));
+    writeln(new LitSIntType(long.min).copiableAs(IntType.SINT64) == true);
+    writeln(new LitSIntType(long.max).copiableAs(IntType.SINT64) == true);
+    writeln(new LitUIntType(ulong.min).copiableAs(IntType.SINT64) == true);
+    writeln(new LitUIntType(ulong.max).copiableAs(IntType.SINT64) == false);
+    writeln(new LitSIntType(long.min).copiableAs(IntType.UINT64) == false);
+    writeln(new LitSIntType(long.max).copiableAs(IntType.UINT64) == true);
+    writeln(new LitUIntType(ulong.min).copiableAs(IntType.UINT64) == true);
+    writeln(new LitUIntType(ulong.max).copiableAs(IntType.UINT64) == true);
 
-    writeln(new LitSIntType(-120000).subtype(IntType.UINT16) == false);
-    writeln(new LitUIntType(120000).subtype(IntType.UINT16) == false);
+    writeln(new LitSIntType(-120000).copiableAs(IntType.UINT16) == false);
+    writeln(new LitUIntType(120000).copiableAs(IntType.UINT16) == false);
 
-    writeln(new LitFloatType(-65504.0).subtype(FloatType.FP16) == true);
-    writeln(new LitFloatType(65504.0).subtype(FloatType.FP16) == true);
-    writeln(new LitFloatType(-float.max).subtype(FloatType.FP32) == true);
-    writeln(new LitFloatType(float.max).subtype(FloatType.FP32) == true);
-    writeln(new LitFloatType(-double.max).subtype(FloatType.FP64) == true);
-    writeln(new LitFloatType(double.max).subtype(FloatType.FP64) == true);
+    writeln(new LitFloatType(-65504.0).copiableAs(FloatType.FP16) == true);
+    writeln(new LitFloatType(65504.0).copiableAs(FloatType.FP16) == true);
+    writeln(new LitFloatType(-float.max).copiableAs(FloatType.FP32) == true);
+    writeln(new LitFloatType(float.max).copiableAs(FloatType.FP32) == true);
+    writeln(new LitFloatType(-double.max).copiableAs(FloatType.FP64) == true);
+    writeln(new LitFloatType(double.max).copiableAs(FloatType.FP64) == true);
 
-    writeln(new LitSIntType(-120000).subtype(FloatType.FP16) == false);
-    writeln(new LitUIntType(120000).subtype(FloatType.FP16) == false);
+    writeln(new LitSIntType(-120000).copiableAs(FloatType.FP16) == false);
+    writeln(new LitUIntType(120000).copiableAs(FloatType.FP16) == false);
 
-    writeln(IntType.SINT8.subtype(IntType.SINT8) == true);
-    writeln(IntType.SINT8.subtype(IntType.UINT8) == false);
-    writeln(IntType.SINT8.subtype(IntType.UINT64) == false);
-    writeln(IntType.UINT8.subtype(IntType.SINT16) == true);
-    writeln(IntType.SINT32.subtype(IntType.SINT64) == true);
+    writeln(IntType.SINT8.copiableAs(IntType.SINT8) == true);
+    writeln(IntType.SINT8.copiableAs(IntType.UINT8) == false);
+    writeln(IntType.SINT8.copiableAs(IntType.UINT64) == false);
+    writeln(IntType.UINT8.copiableAs(IntType.SINT16) == true);
+    writeln(IntType.SINT32.copiableAs(IntType.SINT64) == true);
 
-    writeln(FloatType.FP16.subtype(FloatType.FP16) == true);
-    writeln(FloatType.FP32.subtype(FloatType.FP16) == false);
-    writeln(FloatType.FP32.subtype(FloatType.FP64) == true);
+    writeln(FloatType.FP16.copiableAs(FloatType.FP16) == true);
+    writeln(FloatType.FP32.copiableAs(FloatType.FP16) == false);
+    writeln(FloatType.FP32.copiableAs(FloatType.FP64) == true);
 }
