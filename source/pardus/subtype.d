@@ -33,6 +33,14 @@ bool _subtype(DefinedType left, DefinedType right) {
 }
 
 @method
+bool _subtype(ArrayType left, ArrayType right) {
+    if (!left.modifiers.subtype(right.modifiers) || left.size < right.size) {
+        return false;
+    }
+    return (*left).identical(*right);
+}
+
+@method
 bool _subtype(TupleType left, TupleType right) {
     if (!left.modifiers.subtype(right.modifiers) || left.size() < right.size()) {
         return false;
