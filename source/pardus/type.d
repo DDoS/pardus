@@ -128,17 +128,23 @@ class _TupleType : CompositeType {
 }
 
 alias StructType = immutable _StructType;
-class _StructType : TupleType {
+class _StructType : CompositeType {
+    immutable Type[] fields;
     immutable string[] fieldNames;
 
     this(Modifiers modifiers, Type[] fields, immutable string[] fieldNames) immutable {
         assert(fields.length == fieldNames.length);
-        super(modifiers, fields);
+        super(modifiers);
+        this.fields = fields;
         this.fieldNames = fieldNames;
     }
 
-    override Type opIndex(size_t index) inout {
-        return super[index];
+    @property size_t size() inout {
+        return fields.length;
+    }
+
+    Type opIndex(size_t index) inout {
+        return fields[index];
     }
 
     bool opBinaryRight(string op : "in")(string name) inout {
@@ -146,7 +152,11 @@ class _StructType : TupleType {
     }
 
     Type opIndex(string name) inout {
-        return super[fieldNames.countUntil(name)];
+        return fields[fieldNames.countUntil(name)];
+    }
+
+    size_t opDollar(size_t pos : 0)() inout {
+        return fields.length;
     }
 }
 

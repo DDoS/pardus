@@ -65,8 +65,3 @@ bool _subtype(StructType left, StructType right) {
     }
     return true;
 }
-
-@method
-bool _subtype(TupleType left, StructType right) {
-    return false;
-}
