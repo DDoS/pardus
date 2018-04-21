@@ -99,6 +99,11 @@ string _print(PointerType type, TypeCycles cycles) {
 }
 
 @method
+string _print(AnonPointerType type, TypeCycles cycles) {
+    return "%s*%s".format(type.valueModifiers.printSuffix(), type.modifiers.printSuffix());
+}
+
+@method
 string _print(FunctionType type, TypeCycles cycles) {
     auto ret = type.ret is null ? "" : ' ' ~ type.ret.print(cycles);
     return "func%s (%s)%s".format(type.modifiers.printSuffix(), print(type.params, type.paramNames, cycles), ret);

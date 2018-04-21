@@ -111,6 +111,11 @@ PointerType _makeValueMutable(PointerType type, TypeCycles cycles, BrokenLinks b
 }
 
 @method
+AnonPointerType _makeValueMutable(AnonPointerType type, TypeCycles cycles, BrokenLinks broken) {
+    return new AnonPointerType(Modifiers.MUTABLE, type.valueModifiers);
+}
+
+@method
 FunctionType _makeValueMutable(FunctionType type, TypeCycles cycles, BrokenLinks broken) {
     return new FunctionType(Modifiers.MUTABLE, type.params, type.paramNames, type.ret);
 }

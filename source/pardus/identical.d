@@ -77,6 +77,11 @@ bool _identical(PointerType left, PointerType right, TypesCycles cycles) {
 }
 
 @method
+bool _identical(AnonPointerType left, AnonPointerType right, TypesCycles cycles) {
+    return left.modifiers == right.modifiers && left.valueModifiers == right.valueModifiers;
+}
+
+@method
 bool _identical(FunctionType left, FunctionType right, TypesCycles cycles) {
     if (left.modifiers != right.modifiers || left.size() != right.size() || !left.ret.identical(right.ret, cycles)) {
         return false;

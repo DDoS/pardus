@@ -81,6 +81,14 @@ bool _copiableAs(PointerType left, PointerType right) {
 }
 
 @method
+bool _copiableAs(AnonPointerType left, AnonPointerType right) {
+    auto leftValueMods = left.valueModifiers;
+    auto rightValueMods = right.valueModifiers;
+    return (leftValueMods.mutability == rightValueMods.mutability || rightValueMods.mutability == Mutability.UNKNOWN)
+            && (leftValueMods.identified || !rightValueMods.identified);
+}
+
+@method
 bool _copiableAs(LitBoolType left, BoolType right) {
     return true;
 }

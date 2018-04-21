@@ -80,6 +80,12 @@ void main() {
     writeln(new LitPointerType(new LitFloatType(1.542)).print());
     writeln(new LitSizeSliceType(Modifiers(Mutability.IMMUTABLE, true), IntType.SINT8, new LitUIntType(64)).print());
 
+    writeln(new AnonPointerType(Modifiers.MUTABLE, Modifiers.MUTABLE).print());
+    writeln(new AnonPointerType(Modifiers.MUTABLE, Modifiers.IMMUTABLE).print());
+    writeln(new AnonPointerType(Modifiers.MUTABLE, Modifiers(Mutability.UNKNOWN)).print());
+    writeln(new AnonPointerType(Modifiers.MUTABLE, Modifiers(Mutability.MUTABLE, true)).print());
+    writeln(new AnonPointerType(Modifiers.MUTABLE, Modifiers(Mutability.IMMUTABLE, true)).print());
+
     writeln();
 
     writeln(selfRefType.identical(selfRefType2));
@@ -158,4 +164,26 @@ void main() {
     writeln(FloatType.FP16.copiableAs(FloatType.FP16) == true);
     writeln(FloatType.FP32.copiableAs(FloatType.FP16) == false);
     writeln(FloatType.FP32.copiableAs(FloatType.FP64) == true);
+
+    writeln(new AnonPointerType(Modifiers.MUTABLE, Modifiers.MUTABLE)
+            .copiableAs(new AnonPointerType(Modifiers.MUTABLE, Modifiers.IMMUTABLE)) == false);
+    writeln(new AnonPointerType(Modifiers.MUTABLE, Modifiers.IMMUTABLE)
+            .copiableAs(new AnonPointerType(Modifiers.MUTABLE, Modifiers.MUTABLE)) == false);
+    writeln(new AnonPointerType(Modifiers.MUTABLE, Modifiers.UNKNOWN)
+            .copiableAs(new AnonPointerType(Modifiers.MUTABLE, Modifiers.IMMUTABLE)) == false);
+    writeln(new AnonPointerType(Modifiers.MUTABLE, Modifiers.UNKNOWN)
+            .copiableAs(new AnonPointerType(Modifiers.MUTABLE, Modifiers.MUTABLE)) == false);
+    writeln(new AnonPointerType(Modifiers.MUTABLE, Modifiers.MUTABLE)
+            .copiableAs(new AnonPointerType(Modifiers.MUTABLE, Modifiers.UNKNOWN)) == true);
+    writeln(new AnonPointerType(Modifiers.MUTABLE, Modifiers.IMMUTABLE)
+            .copiableAs(new AnonPointerType(Modifiers.MUTABLE, Modifiers.UNKNOWN)) == true);
+
+    writeln(new AnonPointerType(Modifiers.MUTABLE, Modifiers(Mutability.MUTABLE, true))
+            .copiableAs(new AnonPointerType(Modifiers.MUTABLE, Modifiers(Mutability.MUTABLE, true))) == true);
+    writeln(new AnonPointerType(Modifiers.MUTABLE, Modifiers(Mutability.MUTABLE, false))
+            .copiableAs(new AnonPointerType(Modifiers.MUTABLE, Modifiers(Mutability.MUTABLE, false))) == true);
+    writeln(new AnonPointerType(Modifiers.MUTABLE, Modifiers(Mutability.MUTABLE, true))
+            .copiableAs(new AnonPointerType(Modifiers.MUTABLE, Modifiers(Mutability.MUTABLE, false))) == true);
+    writeln(new AnonPointerType(Modifiers.MUTABLE, Modifiers(Mutability.MUTABLE, false))
+            .copiableAs(new AnonPointerType(Modifiers.MUTABLE, Modifiers(Mutability.MUTABLE, true))) == false);
 }

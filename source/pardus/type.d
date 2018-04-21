@@ -204,6 +204,16 @@ class _PointerType : CompositeType {
     mixin opDeref!value;
 }
 
+alias AnonPointerType = immutable _AnonPointerType;
+class _AnonPointerType : DefinedType {
+    immutable Modifiers valueModifiers;
+
+    this(Modifiers modifiers, Modifiers valueModifiers) immutable {
+        super(modifiers);
+        this.valueModifiers = valueModifiers;
+    }
+}
+
 alias FunctionType = immutable _FunctionType;
 class _FunctionType : DefinedType {
     immutable Type[] params;
