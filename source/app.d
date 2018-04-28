@@ -2,11 +2,11 @@ import std.stdio : writeln;
 
 import openmethods : updateMethods;
 
-import pardus.type;
-import pardus.mutable;
-import pardus.identical;
-import pardus.copiable;
-import pardus.print;
+import pardus.type.def;
+import pardus.type.op.mutable;
+import pardus.type.op.identical;
+import pardus.type.op.copiable;
+import pardus.type.op.print;
 import pardus.util;
 
 void main() {

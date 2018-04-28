@@ -1,11 +1,11 @@
-module pardus.print;
+module pardus.type.op.print;
 
 import std.format : format;
 
 import openmethods: registerMethods, virtual, method;
 
-import pardus.type;
-import pardus.cycle;
+import pardus.type.def;
+import pardus.type.op.cycle;
 import pardus.util;
 
 mixin(registerMethods);

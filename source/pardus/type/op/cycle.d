@@ -1,4 +1,4 @@
-module pardus.cycle;
+module pardus.type.op.cycle;
 
 class Cycles(T, size_t N) if (N > 0) {
     struct Node {

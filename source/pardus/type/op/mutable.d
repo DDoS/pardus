@@ -1,11 +1,11 @@
-module pardus.mutable;
+module pardus.type.op.mutable;
 
 import std.typecons : Rebindable;
 
 import openmethods: registerMethods, virtual, method;
 
-import pardus.type;
-import pardus.cycle;
+import pardus.type.def;
+import pardus.type.op.cycle;
 import pardus.util;
 
 mixin(registerMethods);

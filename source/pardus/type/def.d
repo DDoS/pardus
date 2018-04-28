@@ -1,4 +1,4 @@
-module pardus.type;
+module pardus.type.def;
 
 import std.algorithm.searching : countUntil;
 import std.format : format;

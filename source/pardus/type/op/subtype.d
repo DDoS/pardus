@@ -1,10 +1,10 @@
-module pardus.subtype;
+module pardus.type.op.subtype;
 
 import openmethods: registerMethods, virtual, method;
 
-import pardus.type;
-import pardus.identical;
-import pardus.mutable;
+import pardus.type.def;
+import pardus.type.op.identical;
+import pardus.type.op.mutable;
 
 mixin(registerMethods);
 

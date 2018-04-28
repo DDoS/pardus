@@ -32,3 +32,11 @@ T tryCast(T, S)(S s) {
     }
     throw new Exception("Cannot cast " ~ __traits(identifier, S) ~ " to " ~ __traits(identifier, T));
 }
+
+K[V] inverse(K, V)(V[K] array) {
+    K[V] inv;
+    foreach (k, v; array) {
+        inv[v] = k;
+    }
+    return inv;
+}

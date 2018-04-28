@@ -1,9 +1,9 @@
-module pardus.identical;
+module pardus.type.op.identical;
 
 import openmethods: registerMethods, virtual, method;
 
-import pardus.type;
-import pardus.cycle;
+import pardus.type.def;
+import pardus.type.op.cycle;
 
 mixin(registerMethods);
 

@@ -1,12 +1,12 @@
-module pardus.lub;
+module pardus.type.op.lub;
 
 import std.algorithm.comparison : min;
 
 import openmethods: registerMethods, virtual, method;
 
-import pardus.type;
-import pardus.identical;
-import pardus.copiable;
+import pardus.type.def;
+import pardus.type.op.identical;
+import pardus.type.op.copiable;
 
 mixin(registerMethods);
 
