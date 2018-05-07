@@ -6,12 +6,8 @@ import std.conv : to;
 import pardus.util;
 
 private enum char[char] CHAR_TO_ESCAPE = [
-    'a': '\a',
-    'b': '\b',
     't': '\t',
     'n': '\n',
-    'v': '\v',
-    'f': '\f',
     'r': '\r',
     '"': '"',
     '\\': '\\'
@@ -34,6 +30,10 @@ bool isDecimalDigit(char c) {
     return c >= '0' && c <= '9';
 }
 
+bool isHexadecimalDigit(char c) {
+    return c.isDecimalDigit() || c >= 'A' && c <= 'F' || c >= 'a' && c <= 'f';
+}
+
 bool isNewLine(char c) {
     return c == '\n' || c == '\r';
 }
@@ -47,7 +47,7 @@ bool isWhiteSpace(char c) {
 }
 
 bool isPrintable(char c) {
-    return c >= ' ' && c <= '~' || c == '\t';
+    return c >= ' ' && c <= '~';
 }
 
 bool isEscapeChar(char c) {

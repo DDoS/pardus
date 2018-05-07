@@ -1,5 +1,7 @@
 module pardus.syntax.lexer;
 
+import std.format : format;
+
 import pardus.syntax.chars;
 import pardus.syntax.source;
 import pardus.syntax.token;
@@ -49,8 +51,19 @@ class Lexer {
     private Token next() {
         while (reader.has()) {
             if (reader.head().isWhiteSpace()) {
-                // Remove whitespace
+                // Ignore whitespace
                 reader.advance();
+                continue;
+            }
+            if (reader.head() == '#') {
+                // Line or block comment
+                reader.advance();
+                if (reader.head() == '#') {
+                    reader.advance();
+                    reader.consumeBlockComment();
+                } else {
+                    reader.consumeLineCommentText();
+                }
                 continue;
             }
             if (reader.head() == ':') {
@@ -73,22 +86,20 @@ class Lexer {
                 }
                 return new Identifier(identifier, position);
             }
-            if (reader.head().isOperator()) {
-                // Operator or line comment
+            if (reader.head().isSymbolPrefix()) {
+                // Symbol
                 auto position = reader.count;
-                auto operator = reader.head();
-                reader.advance();
-                if (operator == '/' && reader.head() == '/') {
-                    reader.advance();
-                    reader.consumeLineCommentText();
-                    continue;
-                }
-                return operator.createOperator(position);
+                return createSymbol(reader.collectSymbol(), position);
             }
             if (reader.head() == '"') {
                 // String literal
                 auto position = reader.count;
-                return new LiteralString(reader.collectLiteralString(), position);
+                return new StringLiteral(reader.collectStringLiteral(), position);
+            }
+            if (reader.head() == '\'') {
+                // Character literal
+                auto position = reader.count;
+                return new CharacterLiteral(reader.collectCharacterLiteral(), position);
             }
             if (reader.head().isDecimalDigit()) {
                 // Int or float literal
@@ -118,6 +129,26 @@ private void consumeLineCommentText(SourceReader reader) {
     }
 }
 
+private void consumeBlockComment(SourceReader reader) {
+    // Count and consume leading # symbols
+    // Count starts at 2 because otherwise it's a line comment
+    auto leading = 2;
+    while (reader.head() == '#') {
+        leading += 1;
+        reader.advance();
+    }
+    // Consume anything until matching sequence of # is found
+    auto trailing = 0;
+    while (reader.has() && trailing < leading) {
+        if (reader.head() == '#') {
+            trailing += 1;
+        } else {
+            trailing = 0;
+        }
+        reader.advance();
+    }
+}
+
 private void consumeNewLine(SourceReader reader) {
     if (reader.head() == '\r') {
         // CR
@@ -132,7 +163,14 @@ private void consumeNewLine(SourceReader reader) {
     }
 }
 
-private string collectLiteralString(SourceReader reader) {
+private string collectSymbol(SourceReader reader) {
+    while (reader.peekCollected().isSymbolPrefix()) {
+        reader.collect();
+    }
+    return reader.popCollected();
+}
+
+private string collectStringLiteral(SourceReader reader) {
     // Opening "
     if (reader.head() != '"') {
         throw new SourceException("Expected opening \"", reader.head(), reader.count);
@@ -140,11 +178,12 @@ private string collectLiteralString(SourceReader reader) {
     reader.collect();
     // String contents
     while (true) {
-        if (reader.head().isPrintable() && reader.head() != '"' && reader.head() != '\\') {
-            // Collect a normal print character with no special meaning in a string
+        if ((reader.head().isPrintable() || reader.head().isLineWhiteSpace())
+                && reader.head() != '"' && reader.head() != '\\') {
+            // Collect a normal character with no special meaning in a string
             reader.collect();
         } else if (reader.collectEscapeSequence()) {
-            // Nothing to do, it is already collected by the "if" call
+            // Nothing to do, it is already collected in the "if" call
         } else {
             // Not part of a string literal body, end here
             break;
@@ -158,16 +197,51 @@ private string collectLiteralString(SourceReader reader) {
     return reader.popCollected();
 }
 
+private string collectCharacterLiteral(SourceReader reader) {
+    // Opening '
+    if (reader.head() != '\'') {
+        throw new SourceException("Expected opening \'", reader.head(), reader.count);
+    }
+    reader.collect();
+    // Character contents
+    if (reader.head().isPrintable() && reader.head() != '\\') {
+        reader.collect();
+    } else if (reader.collectEscapeSequence()) {
+        // Nothing to do, it is already collected in the "if" call
+    } else {
+        throw new SourceException("Unsupported character literal", reader.head(), reader.count);
+    }
+    // Closing '
+    if (reader.head() != '\'') {
+        throw new SourceException("Expected closing \'", reader.head(), reader.count);
+    }
+    reader.collect();
+    return reader.popCollected();
+}
+
 private bool collectEscapeSequence(SourceReader reader) {
     if (reader.head() != '\\') {
         return false;
     }
     reader.collect();
-    if (!reader.head().isEscapeChar()) {
-        throw new SourceException("Not a valid escape sequence", reader.head(), reader.count);
+    // Check for unicode sequence
+    if (reader.head() == 'u') {
+        reader.collect();
+        reader.collectHexadecimalSequence(4);
+        return true;
     }
-    reader.collect();
-    return true;
+    // Check for wide unicode sequence
+    if (reader.head() == 'w') {
+        reader.collect();
+        reader.collectHexadecimalSequence(8);
+        return true;
+    }
+    // Check for other common escapes
+    if (reader.head().isEscapeChar()) {
+        reader.collect();
+        return true;
+    }
+    throw new SourceException("Not a valid escape sequence", reader.head(), reader.count);
 }
 
 private Token collectLiteralNumber(SourceReader reader) {
@@ -186,7 +260,7 @@ private Token collectLiteralNumber(SourceReader reader) {
         }
     } else {
         // Normal digit sequence not starting with a zero
-        reader.collectDigitSequence();
+        reader.collectDecimalSequence();
     }
     // Now we can have a decimal separator here, making it a float
     if (reader.head() == '.') {
@@ -195,20 +269,28 @@ private Token collectLiteralNumber(SourceReader reader) {
         if (!reader.head().isDecimalDigit()) {
             throw new SourceException("Expected more digits afer the decimal point", reader.head(), reader.count);
         }
-        reader.collectDigitSequence();
+        reader.collectDecimalSequence();
         return new LiteralFloat(reader.popCollected(), position);
     }
     // Else it's a decimal integer and there's nothing more to do
     return new LiteralInt(reader.popCollected(), position);
 }
 
+alias collectDecimalSequence = collectSequence!(isDecimalDigit, "decimal digit");
+alias collectHexadecimalSequence = collectSequence!(isHexadecimalDigit, "hexadecimal digit");
+alias collectIdentifierBody = collectSequence!(isIdentifierBody, "identifier character");
 
-private void collectDigitSequence(SourceReader reader) {
-    if (!reader.head().isDecimalDigit()) {
-        throw new SourceException("Expected a digit", reader.head(), reader.count);
+private void collectSequence(alias predicate, string name)(SourceReader reader, size_t count = 0) {
+    if (!predicate(reader.head())) {
+        throw new SourceException("Expected a " ~ name, reader.head(), reader.count);
     }
     reader.collect();
-    while (reader.head().isDecimalDigit()) {
+    size_t n = 1;
+    while (predicate(reader.head()) && (count == 0 || n < count)) {
         reader.collect();
+        n += 1;
+    }
+    if (count != 0 && n < count) {
+        throw new SourceException("Expected %s more %s(s)".format(count - n, name), reader.head(), reader.count);
     }
 }

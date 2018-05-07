@@ -2,6 +2,7 @@ module pardus.syntax.source;
 
 import std.conv : to;
 import std.string : stripRight;
+import std.format : format;
 import std.algorithm.comparison : min;
 import std.exception : assumeUnique;
 import std.ascii : newline;
@@ -206,28 +207,28 @@ class SourceException : Exception {
     }
 
     immutable(ErrorInformation)* getErrorInformation(string source) {
+        if (_start > source.length || _end > source.length) {
+            throw new Error("_start and/or _end indices are bigger than the source length");
+        }
         if (source.length == 0) {
-            return new immutable ErrorInformation(this.msg, offender, "", 0, 0, 0);
+            return new immutable ErrorInformation(this.msg, offender, "", 0, 0, 0, 0);
         }
         // Special case, both start and end are max values when the source is unknown
         if (_start == size_t.max && _end == size_t.max) {
             return new immutable ErrorInformation(this.msg, offender);
         }
-        // find the line number the error occurred on
-        size_t lineNumber = findLine(source, min(_start, source.length - 1));
-        // find start and end of the line containing the error
-        size_t lineStart = _start, lineEnd = _start;
-        while (lineStart > 0 && !source[lineStart - 1].isNewLine()) {
-            lineStart--;
-        }
-        while (lineEnd < source.length && !source[lineEnd].isNewLine()) {
-            lineEnd++;
-        }
-        string line = source[lineStart .. lineEnd].stripRight();
-        return new immutable ErrorInformation(this.msg, offender, line, lineNumber, _start - lineStart, _end - lineStart);
+        string section = source[_start .. _end];
+        // find the line(s) the error occurred on
+        size_t startLine = findLineNumber(source, _start);
+        size_t endLine = _end != _start ? findLineNumber(source, _end - 1) : startLine;
+        // find start and end relative to the line(s)
+        size_t lineStart = findPreviousLineEnding(source, _start);
+        size_t lineEnd = _end != _start ? findPreviousLineEnding(source, _end - 1) : lineStart;
+        return new immutable ErrorInformation(this.msg, offender, section, startLine, endLine, lineStart, lineEnd);
     }
 
-    private static size_t findLine(string source, size_t index) {
+    private static size_t findLineNumber(string source, size_t index) {
+        index = min(index, source.length);
         size_t line = 0;
         for (size_t i = 0; i < index; i++) {
             if (source[i].isNewLine()) {
@@ -238,6 +239,16 @@ class SourceException : Exception {
             }
         }
         return line;
+    }
+
+    private static size_t findPreviousLineEnding(string source, size_t index) {
+        if (index >= source.length) {
+            return source.length;
+        }
+        while (index > 0 && !source[index - 1].isNewLine()) {
+            index--;
+        }
+        return index;
     }
 
     private static void consumeNewLine(string source, ref size_t i) {
@@ -258,10 +269,11 @@ class SourceException : Exception {
         string message;
         string offender;
         bool knownSource;
-        string line;
-        size_t lineNumber;
-        size_t startIndex;
-        size_t endIndex;
+        string section;
+        size_t startLine;
+        size_t endLine;
+        size_t lineStart;
+        size_t lineEnd;
 
         this(string message, string offender) {
             this.message = message;
@@ -269,14 +281,16 @@ class SourceException : Exception {
             knownSource = false;
         }
 
-        this(string message, string offender, string line, size_t lineNumber, size_t startIndex, size_t endIndex) {
+        this(string message, string offender, string section, size_t startLine, size_t endLine,
+                size_t lineStart, size_t lineEnd) {
             this.message = message;
             this.offender = offender;
             knownSource = true;
-            this.line = line;
-            this.lineNumber = lineNumber;
-            this.startIndex = startIndex;
-            this.endIndex = endIndex;
+            this.section = section;
+            this.startLine = startLine;
+            this.endLine = endLine;
+            this.lineStart = lineStart;
+            this.lineEnd = lineEnd;
         }
 
         string toString() {
@@ -295,33 +309,32 @@ class SourceException : Exception {
                 return buffer.idup;
             }
             // Othwerise add the line number and index in that line
-            buffer ~= " at line: " ~ lineNumber.to!string ~ ", index: " ~ startIndex.to!string;
-            // Also add the end index if more than one character is involved
-            if (startIndex != endIndex) {
-                buffer ~= " to " ~ endIndex.to!string;
+            if (lineEnd - lineStart > 1) {
+                buffer ~= " from %s:%s to %s:%s".format(startLine, lineStart, endLine, lineEnd);
+            } else {
+                buffer ~= " at %s:%s".format(startLine, lineStart);
             }
             // Now append the actual line source
-            buffer ~= " in \n" ~ line ~ '\n';
+            buffer ~= " in \n" ~ section ~ '\n';
             // We'll underline the problem area, so first pad to the start index
-            foreach (i; 0 .. startIndex) {
-                char pad;
-                if (i < line.length) {
-                    // Use a tab if the source does so to ensure correct alignment
-                    pad = line[i] == '\t' ? '\t' : ' ';
+            foreach (i; 0 .. lineStart) {
+                char pad = void;
+                if (i < section.length) {
+                    // Use a tab if the source does, to ensure correct alignment
+                    pad = section[i] == '\t' ? '\t' : ' ';
                 } else {
                     pad = ' ';
                 }
                 buffer ~= pad;
             }
-            // Now underline, using a circumflex for a single character or tildes for many
-            if (startIndex == endIndex) {
+            // Undeline using a circumflex for a single character, or tildes for many
+            if (lineEnd - lineStart <= 1) {
                 buffer ~= '^';
             } else {
-                for (size_t i = startIndex; i <= endIndex; i++) {
+                foreach (i; lineStart .. lineEnd) {
                     buffer ~= '~';
                 }
             }
-            // Finally return an immutable duplicate of the buffer (a proper string)
             return buffer.idup;
         }
     }

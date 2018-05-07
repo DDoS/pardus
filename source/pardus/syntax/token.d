@@ -2,6 +2,7 @@ module pardus.syntax.token;
 
 import std.format : format;
 import std.conv : to, ConvOverflowException;
+import std.exception : assumeUnique;
 
 import pardus.syntax.chars;
 import pardus.syntax.source;
@@ -18,17 +19,19 @@ enum TokenKind {
     KEYWORD_WHILE,
     KEYWORD_DO,
 
-    OPERATOR_PLUS,
-    OPERATOR_MINUS,
-    OPERATOR_TIMES,
-    OPERATOR_DIVIDE,
-    OPERATOR_ASSIGN,
-    OPERATOR_OPEN_PARENTHESIS,
-    OPERATOR_CLOSE_PARENTHESIS,
+    SYMBOL_PLUS,
+    SYMBOL_MINUS,
+    SYMBOL_TIMES,
+    SYMBOL_POWER,
+    SYMBOL_DIVIDE,
+    SYMBOL_ASSIGN,
+    SYMBOL_OPEN_PARENTHESIS,
+    SYMBOL_CLOSE_PARENTHESIS,
 
     LITERAL_INT,
     LITERAL_FLOAT,
     LITERAL_STRING,
+    LITERAL_CHARACTER,
 
     EOF
 }
@@ -47,7 +50,7 @@ private template FixedToken(TokenKind _kind, string source) if (source.length > 
     private class FixedToken : Token {
         this(size_t start) {
             _start = start;
-            _end = start + source.length - 1;
+            _end = start + source.length;
         }
 
         override string getSource() {
@@ -75,13 +78,14 @@ alias KeywordElse = FixedToken!(TokenKind.KEYWORD_ELSE, "else");
 alias KeywordWhile = FixedToken!(TokenKind.KEYWORD_WHILE, "while");
 alias KeywordDo = FixedToken!(TokenKind.KEYWORD_DO, "do");
 
-alias OperatorPlus = FixedToken!(TokenKind.OPERATOR_PLUS, "+");
-alias OperatorMinus = FixedToken!(TokenKind.OPERATOR_MINUS, "-");
-alias OperatorTimes = FixedToken!(TokenKind.OPERATOR_TIMES, "*");
-alias OperatorDivide = FixedToken!(TokenKind.OPERATOR_DIVIDE, "/");
-alias OperatorAssign = FixedToken!(TokenKind.OPERATOR_ASSIGN, "=");
-alias OperatorOpenParenthesis = FixedToken!(TokenKind.OPERATOR_OPEN_PARENTHESIS, "(");
-alias OperatorCloseParenthesis = FixedToken!(TokenKind.OPERATOR_CLOSE_PARENTHESIS, ")");
+alias SymbolPlus = FixedToken!(TokenKind.SYMBOL_PLUS, "+");
+alias SymbolMinus = FixedToken!(TokenKind.SYMBOL_MINUS, "-");
+alias SymbolTimes = FixedToken!(TokenKind.SYMBOL_TIMES, "*");
+alias SymbolPower = FixedToken!(TokenKind.SYMBOL_POWER, "**");
+alias SymbolDivide = FixedToken!(TokenKind.SYMBOL_DIVIDE, "/");
+alias SymbolAssign = FixedToken!(TokenKind.SYMBOL_ASSIGN, "=");
+alias SymbolOpenParenthesis = FixedToken!(TokenKind.SYMBOL_OPEN_PARENTHESIS, "(");
+alias SymbolCloseParenthesis = FixedToken!(TokenKind.SYMBOL_CLOSE_PARENTHESIS, ")");
 
 class Identifier : Token {
     private string source;
@@ -89,7 +93,7 @@ class Identifier : Token {
     this(string source, size_t start) {
         this.source = source;
         _start = start;
-        _end = start + source.length - 1;
+        _end = start + source.length;
     }
 
     override string getSource() {
@@ -107,13 +111,13 @@ class Identifier : Token {
     }
 }
 
-class LiteralString : Token {
+class StringLiteral : Token {
     private string source;
 
     this(string source, size_t start) {
         this.source = source;
         _start = start;
-        _end = start + source.length - 1;
+        _end = start + source.length;
     }
 
     override string getSource() {
@@ -127,18 +131,7 @@ class LiteralString : Token {
     mixin sourceIndexFields;
 
     string getValue() {
-        auto length = source.length;
-        if (length < 2) {
-            throw new Error("String is missing enclosing quotes");
-        }
-        if (source[0] != '"') {
-            throw new Error("String is missing beginning quote");
-        }
-        auto value = source[1 .. length - 1].decodeStringContent();
-        if (source[length - 1] != '"') {
-            throw new Error("String is missing ending quote");
-        }
-        return value;
+        return source.decodeString('"');
     }
 
     override string toString() {
@@ -146,15 +139,62 @@ class LiteralString : Token {
     }
 
     unittest {
-        auto a = new LiteralString("\"hel\\\"lo\"", 0);
+        auto a = new StringLiteral("\"hel\\\"lo\"", 0);
         assert(a.getValue() == "hel\"lo");
-        auto b = new LiteralString("\"hel\\\\lo\"", 0);
+        auto b = new StringLiteral("\"hel\\\\lo\"", 0);
         assert(b.getValue() == "hel\\lo");
-        auto c = new LiteralString("\"hel\\nlo\"", 0);
+        auto c = new StringLiteral("\"hel\\nlo\"", 0);
         assert(c.getValue() == "hel\nlo");
-        auto d = new LiteralString("\"hel\\r\\f\\vlo\"", 0);
-        assert(d.getValue() == "hel\r\f\vlo");
+        auto d = new StringLiteral("\"hel\\r\\n\\vlo\"", 0);
+        assert(d.getValue() == "hel\r\t\nlo");
     }
+}
+
+class CharacterLiteral : Token {
+    private string source;
+
+    this(string source, size_t start) {
+        this.source = source;
+        _start = start;
+        _end = start + source.length;
+    }
+
+    override string getSource() {
+        return source;
+    }
+
+    @property override TokenKind kind() {
+        return TokenKind.LITERAL_CHARACTER;
+    }
+
+    mixin sourceIndexFields;
+
+    char getValue() {
+        auto value = source.decodeString('\'');
+        if (value.length > 1) {
+            throw new Error("Character literal encoded more than one character");
+        }
+        return value[0];
+    }
+
+    override string toString() {
+        return "%s(%s)".format(kind, source);
+    }
+}
+
+private string decodeString(string data, char quote) {
+    auto length = data.length;
+    if (length < 2) {
+        throw new Error("String is missing enclosing quotes");
+    }
+    if (data[0] != quote) {
+        throw new Error("String is missing beginning quote");
+    }
+    auto value = data[1 .. length - 1].decodeStringContent();
+    if (data[length - 1] != quote) {
+        throw new Error("String is missing ending quote");
+    }
+    return value;
 }
 
 private string decodeStringContent(string data) {
@@ -179,7 +219,7 @@ class LiteralInt : Token {
     this(string source, size_t start) {
         this.source = source;
         _start = start;
-        _end = start + source.length - 1;
+        _end = start + source.length;
     }
 
     override string getSource() {
@@ -223,7 +263,7 @@ class LiteralFloat : Token {
     this(string source, size_t start) {
         this.source = source;
         _start = start;
-        _end = start + source.length - 1;
+        _end = start + source.length;
     }
 
     override string getSource() {
@@ -277,14 +317,40 @@ class Eof : Token {
 
 alias FixedTokenCtor = Token function(size_t);
 
-private enum FixedTokenCtor[string] KEYWORD_CTOR_MAP = buildFixedTokenCtorMap!(
-    KeywordVar, KeywordIf, KeywordElse, KeywordWhile, KeywordDo
-);
+private immutable FixedTokenCtor[string] KEYWORD_CTOR_MAP;
+private immutable FixedTokenCtor[string] SYMBOL_CTOR_MAP;
+private immutable bool[string] SYMBOL_PREFIXES;
 
-private enum FixedTokenCtor[string] OPERATOR_CTOR_MAP = buildFixedTokenCtorMap!(
-    OperatorPlus, OperatorMinus, OperatorTimes, OperatorDivide, OperatorAssign,
-    OperatorOpenParenthesis, OperatorCloseParenthesis
-);
+shared static this() {
+    auto keywordMap = buildFixedTokenCtorMap!(
+        KeywordVar, KeywordIf, KeywordElse, KeywordWhile, KeywordDo
+    );
+    keywordMap.rehash();
+    KEYWORD_CTOR_MAP = keywordMap.assumeUnique();
+
+    auto symbolMap = buildFixedTokenCtorMap!(
+        SymbolPlus, SymbolMinus, SymbolTimes, SymbolPower, SymbolDivide, SymbolAssign,
+        SymbolOpenParenthesis, SymbolCloseParenthesis
+    );
+    symbolMap.rehash();
+    SYMBOL_CTOR_MAP = symbolMap.assumeUnique();
+
+    bool[string] symbolPrefixes;
+    size_t prefixLength = 0;
+    bool addedPrefix = void;
+    do {
+        prefixLength += 1;
+        addedPrefix = false;
+        foreach (op; SYMBOL_CTOR_MAP.byKey()) {
+            if (prefixLength <= op.length) {
+                symbolPrefixes[op[0 .. prefixLength]] = true;
+                addedPrefix = true;
+            }
+        }
+    } while (addedPrefix);
+    symbolPrefixes.rehash();
+    SYMBOL_PREFIXES = symbolPrefixes.assumeUnique();
+}
 
 // Template magic to convert the token type list to a map from the token character to the class constructor
 private FixedTokenCtor[string] buildFixedTokenCtorMap(Token, Tokens...)() {
@@ -309,10 +375,14 @@ Token createKeyword(string source, size_t start) {
     return KEYWORD_CTOR_MAP[source](start);
 }
 
-bool isOperator(char c) {
-    return (c.to!string() in OPERATOR_CTOR_MAP) !is null;
+bool isSymbolPrefix(char prefix) {
+    return isSymbolPrefix(prefix.to!string());
 }
 
-Token createOperator(char source, size_t start) {
-    return OPERATOR_CTOR_MAP[source.to!string()](start);
+bool isSymbolPrefix(string prefix) {
+    return (prefix in SYMBOL_PREFIXES) !is null;
+}
+
+Token createSymbol(string source, size_t start) {
+    return SYMBOL_CTOR_MAP[source](start);
 }
