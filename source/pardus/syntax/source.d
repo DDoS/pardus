@@ -30,15 +30,15 @@ class SourceReader {
         collected.length = DEFAULT_COLLECT_SIZE;
     }
 
-    bool has() {
-        return index < source.length;
+    bool has(size_t offset = 0) {
+        return index + offset < source.length;
     }
 
-    char head() {
-        if (!has()) {
+    char head(size_t offset = 0) {
+        if (!has(offset)) {
             return '\u0004';
         }
-        return source[index];
+        return source[index + offset];
     }
 
     @property size_t count() {

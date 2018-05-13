@@ -103,7 +103,7 @@ class Lexer {
             }
             if (reader.head().isDecimalDigit()) {
                 // Int or float literal
-                return reader.collectLiteralNumber();
+                return reader.collectNumberLiteral();
             }
             // Unknown
             throw new SourceException("Unexpected character", reader.head(), reader.count);
@@ -244,40 +244,86 @@ private bool collectEscapeSequence(SourceReader reader) {
     throw new SourceException("Not a valid escape sequence", reader.head(), reader.count);
 }
 
-private Token collectLiteralNumber(SourceReader reader) {
+private Token collectNumberLiteral(SourceReader reader) {
     auto position = reader.count;
-    // The number must have a decimal digit sequence first
+    uint base = 10;
     if (reader.head() == '0') {
-        reader.collect();
-        // If it starts with zero it should just be a zero
-        if (reader.head().isDecimalDigit()) {
-            throw new SourceException("Cannot have 0 as a leading digit", reader.head(), reader.count);
+        // Collect according to base identifier
+        switch (reader.head(1)) {
+            case 'b':
+            case 'B': {
+                reader.collect();
+                reader.collect();
+                base = 2;
+                reader.collectSplitBinarySequence();
+            }
+            break;
+            case 'c':
+            case 'C': {
+                reader.collect();
+                reader.collect();
+                base = 8;
+                reader.collectSplitOctalSequence();
+            }
+            break;
+            case 'x':
+            case 'X': {
+                reader.collect();
+                reader.collect();
+                base = 16;
+                reader.collectSplitHexadecimalSequence();
+            }
+            break;
+            default: {
+                reader.collectSplitDecimalSequence();
+            }
         }
-        // Check for a decimal separator, which makes it a float
-        if (reader.head() != '.') {
-            // Else it's just the 0 literal
-            return new LiteralInt(reader.popCollected(), position);
-        }
-    } else {
-        // Normal digit sequence not starting with a zero
-        reader.collectDecimalSequence();
     }
-    // Now we can have a decimal separator here, making it a float
-    if (reader.head() == '.') {
-        reader.collect();
-        // There needs to be more digits after the decimal separator
-        if (!reader.head().isDecimalDigit()) {
-            throw new SourceException("Expected more digits afer the decimal point", reader.head(), reader.count);
+    // In base 10 check for a float literal
+    if (base == 10) {
+        bool isFloat = false;
+        // Check for a decimal separator and more digits
+        if (reader.head() == '.') {
+            isFloat = true;
+            reader.collectSplitDecimalSequence();
         }
-        reader.collectDecimalSequence();
-        return new LiteralFloat(reader.popCollected(), position);
+        // Check for an exponent separator
+        if (reader.head() == 'e' || reader.head() == 'E') {
+            isFloat = true;
+            // Optional sign with mandatory digits
+            reader.collect();
+            if (reader.head() == '+' || reader.head() == '-') {
+                reader.collect();
+            }
+            reader.collectDecimalSequence();
+        }
+        if (isFloat) {
+            return new FloatLiteral(reader.popCollected(), position);
+        }
     }
-    // Else it's a decimal integer and there's nothing more to do
-    return new LiteralInt(reader.popCollected(), position);
+    // Else it's just a integer, check for the unsigned suffix
+    if (reader.head() == 'u' || reader.head() == 'U') {
+        return new UIntLiteral(base, reader.popCollected(), position);
+    }
+    return new SIntLiteral(base, reader.popCollected(), position);
 }
 
 alias collectDecimalSequence = collectSequence!(isDecimalDigit, "decimal digit");
 alias collectHexadecimalSequence = collectSequence!(isHexadecimalDigit, "hexadecimal digit");
+
+alias collectSplitBinarySequence = collectSplitSequence!(isBinaryDigit, '_', "binary digit");
+alias collectSplitOctalSequence = collectSplitSequence!(isOctalDigit, '_', "octal digit");
+alias collectSplitDecimalSequence = collectSplitSequence!(isDecimalDigit, '_', "decimal digit");
+alias collectSplitHexadecimalSequence = collectSplitSequence!(isHexadecimalDigit, '_', "hexadecimal digit");
+
+private void collectSplitSequence(alias predicate, char splitter, string name)(SourceReader reader) {
+    reader.collectSequence!(predicate, name);
+    while (reader.head() == splitter) {
+        reader.collect();
+        reader.collectSequence!(predicate, name);
+    }
+}
+
 alias collectIdentifierBody = collectSequence!(isIdentifierBody, "identifier character");
 
 private void collectSequence(alias predicate, string name)(SourceReader reader, size_t count = 0) {

@@ -28,7 +28,8 @@ enum TokenKind {
     SYMBOL_OPEN_PARENTHESIS,
     SYMBOL_CLOSE_PARENTHESIS,
 
-    LITERAL_INT,
+    LITERAL_SINT,
+    LITERAL_UINT,
     LITERAL_FLOAT,
     LITERAL_STRING,
     LITERAL_CHARACTER,
@@ -47,7 +48,7 @@ interface Token {
 }
 
 private template FixedToken(TokenKind _kind, string source) if (source.length > 0) {
-    private class FixedToken : Token {
+    class FixedToken : Token {
         this(size_t start) {
             _start = start;
             _end = start + source.length;
@@ -213,51 +214,69 @@ private string decodeStringContent(string data) {
     return buffer.idup;
 }
 
-class LiteralInt : Token {
-    private string source;
-
-    this(string source, size_t start) {
-        this.source = source;
-        _start = start;
-        _end = start + source.length;
+private template IntegerLiteral(bool signed) {
+    static if (signed) {
+        private alias integer = long;
+    } else {
+        private alias integer = ulong;
     }
 
-    override string getSource() {
-        return source;
-    }
+    class IntegerLiteral : Token {
+        private uint base;
+        private string source;
 
-    @property override TokenKind kind() {
-        return TokenKind.LITERAL_INT;
-    }
-
-    mixin sourceIndexFields;
-
-    int getValue(out bool overflow) {
-        try {
-            overflow = false;
-            return source.to!int(10);
-        } catch (ConvOverflowException) {
-            overflow = true;
-            return -1;
+        this(uint base, string source, size_t start) {
+            this.base = base;
+            this.source = source;
+            _start = start;
+            _end = start + source.length;
         }
-    }
 
-    override string toString() {
-        return "%s(%s)".format(kind, source);
-    }
+        override string getSource() {
+            return source;
+        }
 
-    unittest {
-        bool overflow;
-        auto a = new LiteralInt("42432", 0);
-        assert(a.getValue(overflow) == 42432);
-        assert(!overflow);
-        auto b = new LiteralInt("9223372036854775808", 0);
-        b.getValue(overflow);
-        assert(overflow);
+        @property override TokenKind kind() {
+            static if (signed) {
+                return TokenKind.LITERAL_SINT;
+            } else {
+                return TokenKind.LITERAL_UINT;
+            }
+        }
+
+        mixin sourceIndexFields;
+
+        integer getValue(out bool overflow) {
+            string noPrefix = base != 10 ? source[2 .. $] : source;
+            try {
+                overflow = false;
+                return noPrefix.to!integer(base);
+            } catch (ConvOverflowException) {
+                overflow = true;
+                return -1;
+            }
+        }
+
+        override string toString() {
+            return "%s(%s)".format(kind, source);
+        }
     }
 }
 
-class LiteralFloat : Token {
+alias SIntLiteral = IntegerLiteral!true;
+alias UIntLiteral = IntegerLiteral!false;
+
+unittest {
+    bool overflow;
+    auto a = new IntLiteral("42432", 0);
+    assert(a.getValue(overflow) == 42432);
+    assert(!overflow);
+    auto b = new IntLiteral("9223372036854775808", 0);
+    b.getValue(overflow);
+    assert(overflow);
+}
+
+class FloatLiteral : Token {
     private string source;
 
     this(string source, size_t start) {
@@ -285,11 +304,11 @@ class LiteralFloat : Token {
     }
 
     unittest {
-        auto a = new LiteralFloat("62.33352", 0);
+        auto a = new FloatLiteral("62.33352", 0);
         assert(a.getValue() == 62.33352f);
-        auto b = new LiteralFloat("1.1", 0);
+        auto b = new FloatLiteral("1.1", 0);
         assert(b.getValue() == 1.1f);
-        auto c = new LiteralFloat("0.1", 0);
+        auto c = new FloatLiteral("0.1", 0);
         assert(c.getValue() == 0.1f);
     }
 }
